@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=0.80, maximum-scale=0.80, user-scalable=no">
+  <title>Checklist UTIe</title>
+<link rel="icon" type="image/png" href="https://i.imgur.com/UDGa4e9.png"> 
+  <link rel="apple-touch-icon" href="https://i.imgur.com/UDGa4e9.png">
+  
+  <style>
+    :root {
+      --primary: #0891b2;
+      --success: #10b981;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    body.dark-mode {
+      --bg: #020617; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+    
+    body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 15px; padding-bottom: 80px; transition: background 0.3s; }
+
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    header img { max-height: 45px; }
+    h1 { font-size: 1.2rem; font-weight: 900; text-transform: uppercase; margin: 0; color: var(--primary); text-align: center; flex: 1; }
+
+    .header-form { 
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; 
+      background: var(--card-bg); padding: 15px; border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); margin-bottom: 10px;
+    }
+    .form-group label { font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; }
+    .form-group input { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; background: var(--bg); color: var(--text-main); font-weight: 600; }
+
+    .section-title { 
+      background: var(--text-main); color: white; padding: 4px 12px; font-size: 0.7rem; 
+      font-weight: 800; text-transform: uppercase; border-radius: 4px; margin: 12px 0 6px 0; 
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+    .card { background: var(--card-bg); border-radius: 6px; padding: 10px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); margin-bottom: 6px; padding-bottom: 3px; }
+    .card h2 { font-size: 0.65rem; margin: 0; color: var(--primary); text-transform: uppercase; }
+
+    .btn-select-all {
+      background: var(--success); color: white; border: none; border-radius: 3px;
+      padding: 2px 6px; font-size: 0.6rem; font-weight: 900; cursor: pointer; text-transform: uppercase;
+    }
+    .btn-select-all:active { opacity: 0.7; }
+
+    .check-item { display: flex; align-items: center; padding: 3px 0; border-bottom: 1px dashed var(--border); cursor: pointer; }
+    .check-item:last-child { border-bottom: none; }
+    .check-item input[type="checkbox"] { width: 16px; height: 16px; margin-right: 8px; accent-color: var(--success); }
+    .check-item .label-text { flex: 1; font-size: 0.75rem; }
+    .qty-input { width: 45px; border: 1px solid var(--border); background: var(--bg); text-align: center; font-size: 0.75rem; font-weight: 700; border-radius: 3px; color: var(--text-main); }
+    
+    .precinto-box { background: #f8fafc; padding: 3px 8px; border-radius: 4px; margin-bottom: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .precinto-box label { font-size: 0.6rem; font-weight: 800; color: var(--primary); }
+    .precinto-box input { border: none; background: transparent; font-weight: 700; font-size: 0.75rem; color: var(--text-main); flex: 1; }
+
+    .fab-container { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+    .fab-btn { width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+    .btn-foto { flex: 1; padding: 10px 5px; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-camera { background: var(--primary); }
+    .btn-gallery { background: var(--success); }
+
+    /* =========================================
+       DISEÑO IMPRESIÓN FORZADO 1 PÁGINA (GARANTIZADO)
+       ========================================= */
+    @media print {
+      @page { 
+        size: A4; 
+        margin: 0;
+      }
+      
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        background: white !important;
+        box-sizing: border-box;
+      }
+      
+      body { 
+        padding: 8mm 10mm !important;
+        font-size: 8.5px !important; 
+        line-height: 1.0 !important;
+        color: black !important;
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact;
+      }
+      
+      .fab-container, #botones-foto, .borrar-btn, .btn-select-all { display: none !important; }
+      
+      header { margin-bottom: 3px !important; padding-bottom: 0 !important; }
+      header img { max-height: 25px !important; }
+      h1 { font-size: 13px !important; margin: 0 !important; }
+
+      .header-form { 
+        grid-template-columns: repeat(4, 1fr) !important; 
+        padding: 4px !important; 
+        margin-bottom: 3px !important; 
+        border: 1px solid #ccc !important;
+        gap: 4px !important;
+        box-shadow: none !important;
+        border-top: 1px solid #ccc !important;
+      }
+      .form-group label { font-size: 6.5px !important; margin-bottom: 0 !important; color: #475569 !important;}
+      .form-group input { font-size: 8.5px !important; padding: 1px 2px !important; border: none !important; border-bottom: 1px dotted #ccc !important; background: transparent !important; color: black !important;}
+
+      .grid { 
+        display: grid !important; 
+        grid-template-columns: repeat(3, 1fr) !important; 
+        gap: 3px !important; 
+      }
+      
+      .section-title { 
+        margin: 3px 0 2px 0 !important; 
+        font-size: 8px !important; 
+        padding: 2px 4px !important; 
+        background: #0f172a !important;
+        color: white !important;
+      }
+      
+      .card { 
+        break-inside: avoid !important; 
+        padding: 3px 4px !important; 
+        border: 1px solid #cbd5e1 !important;
+        margin-bottom: 0px !important;
+        box-shadow: none !important;
+        border-radius: 2px !important;
+        background: white !important;
+      }
+      
+      .card-header { margin-bottom: 2px !important; padding-bottom: 1px !important; border-bottom: 1px solid #e2e8f0 !important; }
+      .card h2 { font-size: 7.5px !important; color: #0891b2 !important; }
+
+      .check-item { padding: 0.5px 0 !important; border-bottom: 1px solid #f1f5f9 !important; }
+      .check-item input[type="checkbox"] { width: 9px !important; height: 9px !important; margin-right: 3px !important; }
+      .check-item .label-text { font-size: 7.5px !important; color: black !important; }
+      .qty-input { width: 22px !important; font-size: 7.5px !important; height: auto !important; padding: 0 !important; border: 1px solid #e2e8f0 !important; background: white !important; color: black !important;}
+      
+      .precinto-box { padding: 1px 3px !important; margin-bottom: 2px !important; background: transparent !important; border: none !important; border-bottom: 1px solid #e2e8f0 !important; border-radius: 0 !important;}
+      .precinto-box label { font-size: 7px !important; color: #0891b2 !important; }
+      .precinto-box input { font-size: 7.5px !important; padding: 0 !important; color: black !important;}
+
+      #preview-container { margin-top: 2px !important; }
+      #foto-preview { 
+        max-height: 80px !important;
+        width: auto !important; 
+        max-width: 100% !important;
+        border: 1px solid #ccc !important;
+        margin: 0 auto !important;
+        display: block !important;
+        border-radius: 2px !important;
+      }
+      
+      .card:has(textarea) { margin-top: 3px !important; border-left: 1px solid #cbd5e1 !important; }
+      textarea { 
+        min-height: 25px !important; 
+        height: auto !important; 
+        overflow: visible !important;
+        font-size: 8px !important; 
+        padding: 2px !important;
+        border: 1px solid #e2e8f0 !important;
+        background: white !important;
+        color: black !important;
+        margin-top: 2px !important;
+        resize: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="fab-container">
+    <button class="fab-btn" style="background: #ef4444" onclick="limpiar()" title="Reiniciar">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path fill="white" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    <button class="fab-btn" style="background: #334155" onclick="toggleDarkMode()" title="Modo Oscuro">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path fill="white" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+    </button>
+    <button class="fab-btn" style="background: var(--primary)" onclick="imprimirConTitulo()" title="Imprimir">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path fill="white" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+    </button>
+  </div>
+
+ <header>
+    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME">
+    <h1>CHECKLIST UTIE</h1>
+    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES">
+  </header>
+  <div class="header-form">
+    <div class="form-group"><label>Fecha</label><input type="date" id="fecha"></div>
+    <div class="form-group"><label>Carga Batería</label><input type="text" id="bat" placeholder="5/5"></div>
+    <div class="form-group"><label>Agente</label><input type="text" id="agente" placeholder="Nombre"></div>
+    <div class="form-group"><label>KM Autonomía</label><input type="text" id="km" placeholder="133"></div>
+  </div>
+  <div class="section-title">LATERALES</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><h2>Lateral Derecho</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Tabla espinal</span><input type="text" class="qty-input" value="4"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Silla de ruedas</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Tubo oxígeno chico</span><input type="text" class="qty-input" value="4"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Tubo oxígeno grande</span><input type="text" class="qty-input" value="4"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Lateral Izquierdo</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Collares cervicales (P,S,M,L,XL)</span><input type="text" class="qty-input" value="10"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Conos de tránsito</span><input type="text" class="qty-input" value="3"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Bancos rojos</span><input type="text" class="qty-input" value="4"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Chalecos Kendrick</span><input type="text" class="qty-input" value="4"></label>
+    </div>
+  </div>
+  <div class="section-title">ATRÁS</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><h2>MEDIO</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Boca oxigeno + máscara</span><input type="text" class="qty-input" value="6"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Cajón 1</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Máscara oxigeno (reservório)</span><input type="text" class="qty-input" value="10"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Máscara oxigeno (nebulización)</span><input type="text" class="qty-input" value="9"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Máscara oxigeno (pediátrica)</span><input type="text" class="qty-input" value="9"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Cajón 2</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Manta térmica</span><input type="text" class="qty-input" value="8"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Barbijos</span><input type="text" class="qty-input" value="1 paq"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Bolsas rojas</span><input type="text" class="qty-input" value=">5"></label>
+    </div>
+    <div class="card">
+            <div class="card-header"><h2>Cajón 3</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Vendas</span><input type="text" class="qty-input" value=">30"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Apósitos</span><input type="text" class="qty-input" value="9"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Gasas</span><input type="text" class="qty-input" value=">20"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Cajón 4</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Solución fisiológica</span><input type="text" class="qty-input" value="10"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Dextrosado</span><input type="text" class="qty-input" value="6"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Abbocath</span><input type="text" class="qty-input" value="1 paq"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Guías de suero</span><input type="text" class="qty-input" value="1 paq"></label>
+    </div>
+  </div>
+  <div class="section-title">MUEBLE SUPERIOR</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><h2>Bolso Verde 1</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <div class="precinto-box"><label>Nº PRECINTO:</label><input type="text" id="pre1" placeholder="0123456"></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Gasas, vendas</span><input type="text" class="qty-input" value=">10"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Collares cervicales</span><input type="text" class="qty-input" value="6"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Solución Fisiológica</span><input type="text" class="qty-input" value="2"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Dextrosado</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Bolso azul - férulas</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Manta térmica</span><input type="text" class="qty-input" value="1"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Bolso Verde 2</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <div class="precinto-box"><label>Nº PRECINTO:</label><input type="text" id="pre2" placeholder="0123456"></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Ambú Adulto</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Ambú Pediátrico</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Estuche Laringo</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Tubos Endotraqueales</span><input type="text" class="qty-input" value="6"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>SUPERIOR</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Inmovilizadores laterales</span><input type="text" class="qty-input" value="5"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Collares cervicales (P,S,M,L,XL)</span><input type="text" class="qty-input" value="9"></label>
+    </div>
+  </div>
+  <div class="section-title">INTERIOR</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><h2>Interior</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <div class="precinto-box"><label>Nº CARDIO:</label><input type="text" id="pre3" placeholder="0123456"></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Cardio</span><input type="text" class="qty-input" value="Funciona"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Monitores x2</span><input type="text" class="qty-input" value="Funciona"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">PC</span><input type="text" class="qty-input" value="Funciona"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Teclado</span><input type="text" class="qty-input" value="Funciona"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Mouse</span><input type="text" class="qty-input" value="Funciona"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Control remoto</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Cable Alargue</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Silla</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Matafuegos</span><input type="text" class="qty-input" value="1"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Mueble</h2><button class="btn-select-all" onclick="selectAllInCard(this)">Todos</button></div>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Alcohol</span><input type="text" class="qty-input" value="1"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Agua oxigenada</span><input type="text" class="qty-input" value="2"></label>
+      <label class="check-item"><input type="checkbox"><span class="label-text">Cajas guantes (S,M,L)</span><input type="text" class="qty-input" value="3"></label>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Registro Cardio</h2></div>
+      <div id="botones-foto" style="display: flex; gap: 5px;">
+        <input type="file" id="cam" accept="image/*" capture="environment" style="display:none">
+        <button onclick="document.getElementById('cam').click()" class="btn-foto btn-camera">📷 CÁMERA</button>
+        <input type="file" id="gal" accept="image/*" style="display:none">
+        <button onclick="document.getElementById('gal').click()" class="btn-foto btn-gallery">🖼️ GALERÍA</button>
+      </div>
+      <div id="preview-container" style="display:none; text-align:center; margin-top:5px;">
+        <img id="foto-preview" style="max-width:100%; max-height:100px; border-radius:4px;">
+        <button class="borrar-btn" onclick="borrarFoto()" style="display:block; width:100%; background:#ef4444; color:white; border:none; margin-top:4px; padding:3px; border-radius:4px; font-size:0.6rem; cursor:pointer;">BORRAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px; border-left: 5px solid var(--primary);">
+    <label style="font-size:0.6rem; font-weight:900; color:var(--text-muted); text-transform:uppercase;">Observaciones</label>
+    <textarea id="obs" style="width:100%; min-height:50px; border:none; background:var(--bg); padding:8px; border-radius:4px; margin-top:5px; font-size:0.8rem;" placeholder="Escriba aquí..."></textarea>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if(!document.getElementById('fecha').value) {
+        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+      const obsTextarea = document.getElementById('obs');
+      
+      function autoResize() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+      }
+      
+      obsTextarea.addEventListener('input', autoResize);
+      
+      setTimeout(() => {
+        obsTextarea.style.height = 'auto';
+        obsTextarea.style.height = (obsTextarea.scrollHeight) + 'px';
+      }, 100);
+        
+      }
+      
+      const allInputs = document.querySelectorAll('input:not([type="file"]), textarea');
+      allInputs.forEach((input, index) => {
+        if (!input.id) input.id = 'idx-' + index;
+        const saved = localStorage.getItem(input.id);
+        if (saved) {
+          if (input.type === 'checkbox') input.checked = (saved === 'true');
+          else input.value = saved;
+        }
+        input.addEventListener('change', () => {
+          localStorage.setItem(input.id, input.type === 'checkbox' ? input.checked : input.value);
+        });
+      });
+
+      const foto = localStorage.getItem('foto-utia');
+      if (foto) {
+        document.getElementById('foto-preview').src = foto;
+        document.getElementById('preview-container').style.display = 'block';
+      }
+    });
+
+    function selectAllInCard(btn) {
+      const card = btn.closest('.card');
+      const checks = card.querySelectorAll('input[type="checkbox"]');
+      checks.forEach(checkbox => {
+        checkbox.checked = true;
+        const event = new Event('change');
+        checkbox.dispatchEvent(event);
+      });
+    }
+
+    function procesarImagen(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX = 600;
+          let w = img.width, h = img.height;
+          if (w > MAX) { h *= MAX/w; w = MAX; }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          document.getElementById('foto-preview').src = dataUrl;
+          document.getElementById('preview-container').style.display = 'block';
+          localStorage.setItem('foto-utia', dataUrl);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('cam').addEventListener('change', procesarImagen);
+    document.getElementById('gal').addEventListener('change', procesarImagen);
+
+    function borrarFoto() {
+      if(confirm('¿Borrar foto?')){
+        document.getElementById('foto-preview').src = "";
+        document.getElementById('preview-container').style.display = 'none';
+        localStorage.removeItem('foto-utia');
+        document.getElementById('cam').value = "";
+        document.getElementById('gal').value = "";
+      }
+    }
+
+    function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+    function limpiar() { if(confirm('¿Reiniciar todo el checklist?')) { localStorage.clear(); location.reload(); } }
+
+    function imprimirConTitulo() {
+      const tituloOriginal = document.title;
+      const fechaInput = document.getElementById('fecha').value;
+      let fechaObj;
+      
+      if (fechaInput) {
+        const partes = fechaInput.split('-');
+        fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
+      } else {
+        fechaObj = new Date();
+      }
+
+      const dia = String(fechaObj.getDate()).padStart(2, '0');
+      const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+      const anio = fechaObj.getFullYear();
+      const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      const diaSemana = diasSemana[fechaObj.getDay()];
+      const nuevoTitulo = `${dia}-${mes}-${anio} (${diaSemana})`;
+      
+      document.title = nuevoTitulo;
+
+      const textarea = document.getElementById('obs');
+      textarea.style.display = 'none'; 
+      
+      const divImpresion = document.createElement('div');
+      divImpresion.id = 'div-obs-temp';
+      divImpresion.style.cssText = 'font-size: 8px !important; white-space: pre-wrap; padding: 2px; border: 1px solid #e2e8f0; margin-top: 2px; min-height: 25px; color: black; background: white; width: 100%; box-sizing: border-box;';
+      divImpresion.innerText = textarea.value || "";
+      
+
+      textarea.parentNode.appendChild(divImpresion);
+
+
+      setTimeout(() => {
+        window.print();
+        
+        setTimeout(() => { 
+          document.title = tituloOriginal; 
+          textarea.style.display = 'block';
+          const tempDiv = document.getElementById('div-obs-temp');
+          if (tempDiv) tempDiv.remove();
+        }, 3000);
+      }, 200);
+    }
+  </script>
+</body>
+</html>
