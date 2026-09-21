@@ -6,6 +6,8 @@
   <title>Checklist UTIe</title>
 <link rel="icon" type="image/png" href="https://i.imgur.com/UDGa4e9.png"> 
   <link rel="apple-touch-icon" href="https://i.imgur.com/UDGa4e9.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <style>
     :root {
@@ -321,6 +323,7 @@
     <textarea id="obs" style="width:100%; min-height:50px; border:none; background:var(--bg); padding:8px; border-radius:4px; margin-top:5px; font-size:0.8rem;" placeholder="Escriba aquí..."></textarea>
   </div>
 
+ 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if(!document.getElementById('fecha').value) {
@@ -411,23 +414,72 @@
     function limpiar() { if(confirm('¿Reiniciar todo el checklist?')) { localStorage.clear(); location.reload(); } }
 
     function imprimirConTitulo() {
-      const tituloOriginal = document.title;
-      const fechaInput = document.getElementById('fecha').value;
-      let fechaObj;
-      
-      if (fechaInput) {
-        const partes = fechaInput.split('-');
-        fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
-      } else {
-        fechaObj = new Date();
-      }
+  const tituloOriginal = document.title;
+  const fechaInput = document.getElementById('fecha').value;
+  let fechaObj = fechaInput ? new Date(fechaInput.split('-')[0], fechaInput.split('-')[1] - 1, fechaInput.split('-')[2]) : new Date();
 
-      const dia = String(fechaObj.getDate()).padStart(2, '0');
-      const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
-      const anio = fechaObj.getFullYear();
-      const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-      const diaSemana = diasSemana[fechaObj.getDay()];
-      const nuevoTitulo = `${dia}-${mes}-${anio} (${diaSemana})`;
+  const dia = String(fechaObj.getDate()).padStart(2, '0');
+  const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+  const anio = fechaObj.getFullYear();
+  const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const nuevoTitulo = `${dia}-${mes}-${anio} (${diasSemana[fechaObj.getDay()]})`;
+
+  const textarea = document.getElementById('obs');
+  textarea.style.display = 'none';
+  const divImpresion = document.createElement('div');
+  divImpresion.id = 'div-obs-temp';
+  divImpresion.style.cssText = 'font-size: 8px !important; white-space: pre-wrap; padding: 2px; border: 1px solid #e2e8f0; margin-top: 2px; min-height: 25px; color: black; background: white; width: 100%; box-sizing: border-box;';
+  divImpresion.innerText = textarea.value || "";
+  textarea.parentNode.appendChild(divImpresion);
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  if (isIOS && isStandalone) {
+    const styleTag = document.querySelector('style');
+    const tempStyle = document.createElement('style');
+    tempStyle.innerHTML = styleTag.innerHTML.replace(/@media print/g, '@media all');
+    document.head.appendChild(tempStyle);
+
+    const opt = {
+      margin: 0,
+      filename: nuevoTitulo + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, windowWidth: 794 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(document.body).outputPdf('blob').then(function(pdfBlob) {
+      document.head.removeChild(tempStyle);
+      restaurarUI();
+
+      const file = new File([pdfBlob], nuevoTitulo + '.pdf', { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: nuevoTitulo,
+          text: 'Checklist UTIe'
+        }).catch(err => console.error('Error al compartir:', err));
+      } else {
+        const url = URL.createObjectURL(pdfBlob);
+        window.location.href = url;
+      }
+    });
+  } else {
+    document.title = nuevoTitulo;
+    setTimeout(() => {
+      window.print();
+      setTimeout(restaurarUI, 3000);
+    }, 200);
+  }
+
+  function restaurarUI() {
+    document.title = tituloOriginal;
+    textarea.style.display = 'block';
+    const tempDiv = document.getElementById('div-obs-temp');
+    if (tempDiv) tempDiv.remove();
+  }
+}
       
       document.title = nuevoTitulo;
 
