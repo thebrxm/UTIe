@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="https://i.imgur.com/UDGa4e9.png"> 
   <link rel="apple-touch-icon" href="https://i.imgur.com/UDGa4e9.png">
   
-  <!-- Librería html2pdf -->
+  <!-- Librería para generar PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -76,23 +76,21 @@
 
     #obs-print { display: none; }
 
-    /* Indicador visual de generación */
+    /* Indicador visual de carga (tapa la creación del PDF en segundo plano) */
     #pdf-loading {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.85); z-index: 99999;
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #0f172a; z-index: 999999;
       color: white; font-weight: bold; font-size: 1rem;
       align-items: center; justify-content: center; flex-direction: column; gap: 12px;
     }
     .spinner {
-      width: 36px; height: 36px; border: 4px solid #ffffff44;
+      width: 38px; height: 38px; border: 4px solid rgba(255,255,255,0.2);
       border-top-color: #0891b2; border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* =========================================
-       DISEÑO IMPRESIÓN FORZADO 1 PÁGINA (PC)
-       ========================================= */
+    /* Impresión nativa en PC */
     @media print {
       @page { size: A4 portrait; margin: 4mm; }
       html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: white !important; }
@@ -144,9 +142,9 @@
   </div>
 
   <header>
-    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME" id="logo-left">
+    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME" id="logo-left" crossorigin="anonymous">
     <h1>CHECKLIST UTIE</h1>
-    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES" id="logo-right">
+    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES" id="logo-right" crossorigin="anonymous">
   </header>
 
   <div class="header-form">
@@ -391,37 +389,38 @@
 
     async function gestionarExportacion() {
       if (!esModoAppOMovil()) {
-        // En computadora: impresión directa del navegador
         const tituloOriginal = document.title;
         prepararImpresion();
         window.addEventListener('afterprint', () => { document.title = tituloOriginal; }, { once: true });
         window.print();
       } else {
-        // En celular: generar PDF con plantilla fija A4
         await exportarPDFMaquetado();
       }
     }
 
-    // Genera un documento A4 estricto en memoria independiente de la pantalla del celular
     async function exportarPDFMaquetado() {
       const loader = document.getElementById('pdf-loading');
       loader.style.display = 'flex';
       const nombreArchivo = obtenerTitulo() + '.pdf';
 
-      // Crear contenedor temporal fuera de pantalla con medidas A4 fijas (794px = 210mm)
+      // Posicionamiento en el origen visible para evitar capturas en blanco
+      const scrollPrevio = window.scrollY;
+      window.scrollTo(0, 0);
+
       const exportContainer = document.createElement('div');
+      exportContainer.id = 'pdf-export-container';
       exportContainer.style.position = 'absolute';
-      exportContainer.style.top = '-99999px';
+      exportContainer.style.top = '0';
       exportContainer.style.left = '0';
       exportContainer.style.width = '794px';
       exportContainer.style.background = '#ffffff';
       exportContainer.style.color = '#000000';
-      exportContainer.style.padding = '12px 18px';
+      exportContainer.style.padding = '12px 16px';
       exportContainer.style.fontFamily = "'Segoe UI', Arial, sans-serif";
       exportContainer.style.boxSizing = 'border-box';
       exportContainer.style.lineHeight = '1.1';
+      exportContainer.style.zIndex = '1000';
 
-      // Header
       const fecha = document.getElementById('fecha').value || '-';
       const bat = document.getElementById('bat').value || '-';
       const agente = document.getElementById('agente').value || '-';
@@ -431,9 +430,9 @@
 
       let html = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <img src="https://i.imgur.com/GXTFolo.png" style="max-height:28px;" crossorigin="anonymous">
-          <div style="font-size:13px; font-weight:900; color:#0891b2; text-align:center;">CHECKLIST UTIE</div>
-          <img src="https://i.imgur.com/W5Mo4rc.png" style="max-height:28px;" crossorigin="anonymous">
+          <img src="https://i.imgur.com/GXTFolo.png?v=1" style="max-height:26px;" crossorigin="anonymous">
+          <div style="font-size:13px; font-weight:900; color:#0891b2; text-align:center; letter-spacing:1px;">CHECKLIST UTIE</div>
+          <img src="https://i.imgur.com/W5Mo4rc.png?v=1" style="max-height:26px;" crossorigin="anonymous">
         </div>
 
         <table style="width:100%; border:1px solid #cbd5e1; margin-bottom:5px; border-collapse:collapse; font-size:8px;">
@@ -447,21 +446,22 @@
       `;
 
       function renderCardHTML(cardEl) {
+        if (!cardEl) return '';
         const title = cardEl.querySelector('h2') ? cardEl.querySelector('h2').innerText : '';
         const precinto = cardEl.querySelector('.precinto-box input');
         const precintoLabel = cardEl.querySelector('.precinto-box label');
 
         let cardContent = `
-          <div style="border:1px solid #cbd5e1; border-radius:3px; padding:3px 5px; margin-bottom:3px; background:#fff;">
-            <div style="font-size:7.5px; font-weight:900; color:#0891b2; text-transform:uppercase; border-bottom:1px solid #e2e8f0; padding-bottom:1px; margin-bottom:2px;">
+          <div style="border:1px solid #cbd5e1; border-radius:3px; padding:3px 4px; margin-bottom:3px; background:#ffffff;">
+            <div style="font-size:7px; font-weight:900; color:#0891b2; text-transform:uppercase; border-bottom:1px solid #e2e8f0; padding-bottom:1px; margin-bottom:2px;">
               ${title}
             </div>
         `;
 
         if (precinto && precintoLabel) {
           cardContent += `
-            <div style="font-size:7px; font-weight:800; color:#0891b2; border-bottom:1px solid #e2e8f0; margin-bottom:2px; padding-bottom:1px;">
-              ${precintoLabel.innerText} <span style="color:#000; font-weight:bold;">${precinto.value || '-'}</span>
+            <div style="font-size:6.5px; font-weight:800; color:#0891b2; border-bottom:1px solid #e2e8f0; margin-bottom:2px; padding-bottom:1px;">
+              ${precintoLabel.innerText} <span style="color:#000000; font-weight:bold;">${precinto.value || '-'}</span>
             </div>
           `;
         }
@@ -474,12 +474,12 @@
           const qty = item.querySelector('.qty-input') ? item.querySelector('.qty-input').value : '';
 
           cardContent += `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #f1f5f9; padding:0.5px 0; font-size:7.5px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #f1f5f9; padding:0.5px 0; font-size:7px;">
               <span style="display:inline-flex; align-items:center;">
-                <span style="display:inline-block; width:9px; height:9px; border:1px solid #94a3b8; border-radius:2px; margin-right:4px; text-align:center; line-height:8px; font-size:8px; font-weight:bold; background:${isChecked ? '#10b981' : '#fff'}; color:#fff;">${isChecked ? '✓' : ''}</span>
+                <span style="display:inline-block; width:8px; height:8px; border:1px solid #94a3b8; border-radius:2px; margin-right:4px; text-align:center; line-height:7px; font-size:7px; font-weight:bold; background:${isChecked ? '#10b981' : '#ffffff'}; color:#ffffff;">${isChecked ? '✓' : ''}</span>
                 <span>${text}</span>
               </span>
-              <span style="font-weight:bold; border:1px solid #e2e8f0; padding:0 3px; border-radius:2px; font-size:7px;">${qty}</span>
+              <span style="font-weight:bold; border:1px solid #e2e8f0; padding:0 2px; border-radius:2px; font-size:6.5px;">${qty}</span>
             </div>
           `;
         });
@@ -488,11 +488,11 @@
           if (fotoSrc) {
             cardContent += `
               <div style="text-align:center; margin-top:2px;">
-                <img src="${fotoSrc}" style="max-height:60px; max-width:100%; border:1px solid #ccc; border-radius:2px;">
+                <img src="${fotoSrc}" style="max-height:55px; max-width:100%; border:1px solid #ccc; border-radius:2px;">
               </div>
             `;
           } else {
-            cardContent += `<div style="font-size:7px; color:#64748b; text-align:center; padding:5px 0;">(Sin foto adjunta)</div>`;
+            cardContent += `<div style="font-size:6.5px; color:#64748b; text-align:center; padding:4px 0;">(Sin foto adjunta)</div>`;
           }
         }
 
@@ -500,14 +500,13 @@
         return cardContent;
       }
 
-      // Extraer secciones y agrupar en columnas fijas
       const bodyCards = document.querySelectorAll('.grid .card');
       const cardsHTML = Array.from(bodyCards).map(c => renderCardHTML(c));
 
-      // Dividir las tarjetas en 3 columnas iguales usando una tabla fija
-      const col1 = [cardsHTML[0], cardsHTML[2], cardsHTML[3], cardsHTML[4]].filter(Boolean).join('');
-      const col2 = [cardsHTML[1], cardsHTML[5], cardsHTML[6], cardsHTML[7]].filter(Boolean).join('');
-      const col3 = [cardsHTML[8], cardsHTML[9], cardsHTML[10], cardsHTML[11], cardsHTML[12]].filter(Boolean).join('');
+      // Distribución balanceada en 3 columnas
+      const col1 = [cardsHTML[0], cardsHTML[2], cardsHTML[3], cardsHTML[4], cardsHTML[5]].filter(Boolean).join('');
+      const col2 = [cardsHTML[1], cardsHTML[6], cardsHTML[7], cardsHTML[8]].filter(Boolean).join('');
+      const col3 = [cardsHTML[9], cardsHTML[10], cardsHTML[11], cardsHTML[12]].filter(Boolean).join('');
 
       html += `
         <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
@@ -518,7 +517,7 @@
           </tr>
         </table>
 
-        <div style="margin-top:3px; border:1px solid #cbd5e1; border-left:4px solid #0891b2; padding:3px 5px; border-radius:2px; font-size:7.5px;">
+        <div style="margin-top:3px; border:1px solid #cbd5e1; border-left:3px solid #0891b2; padding:3px 5px; border-radius:2px; font-size:7px;">
           <strong>OBSERVACIONES:</strong>
           <div style="white-space:pre-wrap; margin-top:1px;">${obsTexto}</div>
         </div>
@@ -530,11 +529,12 @@
       const opt = {
         margin: [3, 3, 3, 3],
         filename: nombreArchivo,
-        image: { type: 'jpeg', quality: 0.95 },
+        image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
-          logging: false,
+          scrollX: 0,
+          scrollY: 0,
           width: 794,
           windowWidth: 794
         },
@@ -544,6 +544,7 @@
       try {
         const pdfBlob = await html2pdf().set(opt).from(exportContainer).outputPdf('blob');
         document.body.removeChild(exportContainer);
+        window.scrollTo(0, scrollPrevio);
         loader.style.display = 'none';
 
         const archivo = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
@@ -563,7 +564,10 @@
           URL.revokeObjectURL(fileURL);
         }
       } catch (err) {
-        if (exportContainer.parentNode) document.body.removeChild(exportContainer);
+        if (document.getElementById('pdf-export-container')) {
+          document.body.removeChild(document.getElementById('pdf-export-container'));
+        }
+        window.scrollTo(0, scrollPrevio);
         loader.style.display = 'none';
         alert('Error al generar PDF: ' + err.message);
       }
