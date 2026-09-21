@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="https://i.imgur.com/UDGa4e9.png"> 
   <link rel="apple-touch-icon" href="https://i.imgur.com/UDGa4e9.png">
   
+  <!-- Librería html2pdf -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -75,61 +76,25 @@
 
     #obs-print { display: none; }
 
-    /* Indicador visual de carga */
+    /* Indicador visual de generación */
     #pdf-loading {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.7); z-index: 9999;
+      background: rgba(15, 23, 42, 0.85); z-index: 99999;
       color: white; font-weight: bold; font-size: 1rem;
-      align-items: center; justify-content: center; flex-direction: column; gap: 10px;
+      align-items: center; justify-content: center; flex-direction: column; gap: 12px;
     }
+    .spinner {
+      width: 36px; height: 36px; border: 4px solid #ffffff44;
+      border-top-color: #0891b2; border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* =========================================
-       DISEÑO IMPRESIÓN FORZADO 1 PÁGINA (PC y PDF)
+       DISEÑO IMPRESIÓN FORZADO 1 PÁGINA (PC)
        ========================================= */
-    @media print, (min-width: 0px) {
-      body.modo-pdf-export {
-        width: 794px !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        background: white !important;
-        color: black !important;
-      }
-      body.modo-pdf-export header img { max-height: 25px !important; }
-      body.modo-pdf-export h1 { font-size: 13px !important; margin: 0 !important; }
-      body.modo-pdf-export .header-form {
-        grid-template-columns: repeat(4, 1fr) !important;
-        padding: 4px !important;
-        margin-bottom: 3px !important;
-        border: 1px solid #ccc !important;
-        gap: 4px !important;
-        box-shadow: none !important;
-      }
-      body.modo-pdf-export .grid {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 3px !important;
-      }
-      body.modo-pdf-export .card {
-        padding: 3px 4px !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 2px !important;
-        box-shadow: none !important;
-      }
-      body.modo-pdf-export .section-title {
-        margin: 3px 0 2px 0 !important;
-        font-size: 8px !important;
-        padding: 2px 4px !important;
-      }
-      body.modo-pdf-export .fab-container,
-      body.modo-pdf-export #botones-foto,
-      body.modo-pdf-export .borrar-btn,
-      body.modo-pdf-export .btn-select-all {
-        display: none !important;
-      }
-    }
-
     @media print {
-      @page { size: A4 portrait; margin: 5mm; }
+      @page { size: A4 portrait; margin: 4mm; }
       html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: white !important; }
       body { padding: 4mm 6mm !important; font-size: 8px !important; line-height: 1.0 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .fab-container, #botones-foto, .borrar-btn, .btn-select-all { display: none !important; }
@@ -152,17 +117,18 @@
       .precinto-box label { font-size: 7px !important; color: #0891b2 !important; }
       .precinto-box input { font-size: 7.5px !important; padding: 0 !important; color: black !important; }
       #preview-container { margin-top: 2px !important; }
-      #foto-preview { max-height: 70px !important; width: auto !important; max-width: 100% !important; border: 1px solid #ccc !important; margin: 0 auto !important; display: block !important; border-radius: 2px !important; }
+      #foto-preview { max-height: 65px !important; width: auto !important; max-width: 100% !important; border: 1px solid #ccc !important; margin: 0 auto !important; display: block !important; border-radius: 2px !important; }
       #obs { display: none !important; }
       #obs-print { display: block !important; font-size: 7.5px !important; white-space: pre-wrap; padding: 2px; border: 1px solid #e2e8f0; margin-top: 2px; min-height: 20px; color: black; background: white; width: 100%; box-sizing: border-box; }
     }
   </style>
 </head>
-<body id="checklist-body">
+<body>
 
   <div id="pdf-loading">
-    <div>📄 Generando PDF...</div>
-    <span style="font-size: 0.8rem; opacity: 0.8;">Por favor aguarde un momento</span>
+    <div class="spinner"></div>
+    <div>Generando PDF A4...</div>
+    <span style="font-size: 0.75rem; opacity: 0.8;">Aguarde un momento</span>
   </div>
 
   <div class="fab-container">
@@ -172,22 +138,24 @@
     <button class="fab-btn" style="background: #334155" onclick="toggleDarkMode()" title="Modo Oscuro">
       <svg viewBox="0 0 24 24" width="24" height="24"><path fill="white" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
     </button>
-    <button class="fab-btn" style="background: var(--primary)" onclick="gestionarExportacion()" title="Imprimir / Exportar">
+    <button class="fab-btn" style="background: var(--primary)" onclick="gestionarExportacion()" title="Imprimir / Guardar PDF">
       <svg viewBox="0 0 24 24" width="24" height="24"><path fill="white" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
     </button>
   </div>
 
   <header>
-    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME" crossorigin="anonymous">
+    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME" id="logo-left">
     <h1>CHECKLIST UTIE</h1>
-    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES" crossorigin="anonymous">
+    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES" id="logo-right">
   </header>
+
   <div class="header-form">
     <div class="form-group"><label>Fecha</label><input type="date" id="fecha"></div>
     <div class="form-group"><label>Carga Batería</label><input type="text" id="bat" placeholder="5/5"></div>
     <div class="form-group"><label>Agente</label><input type="text" id="agente" placeholder="Nombre"></div>
     <div class="form-group"><label>KM Autonomía</label><input type="text" id="km" placeholder="133"></div>
   </div>
+
   <div class="section-title">LATERALES</div>
   <div class="grid">
     <div class="card">
@@ -205,6 +173,7 @@
       <label class="check-item"><input type="checkbox"><span class="label-text">Chalecos Kendrick</span><input type="text" class="qty-input" value="4"></label>
     </div>
   </div>
+
   <div class="section-title">ATRÁS</div>
   <div class="grid">
     <div class="card">
@@ -237,6 +206,7 @@
       <label class="check-item"><input type="checkbox"><span class="label-text">Guías de suero</span><input type="text" class="qty-input" value="1 paq"></label>
     </div>
   </div>
+
   <div class="section-title">MUEBLE SUPERIOR</div>
   <div class="grid">
     <div class="card">
@@ -263,6 +233,7 @@
       <label class="check-item"><input type="checkbox"><span class="label-text">Collares cervicales (P,S,M,L,XL)</span><input type="text" class="qty-input" value="9"></label>
     </div>
   </div>
+
   <div class="section-title">INTERIOR</div>
   <div class="grid">
     <div class="card">
@@ -412,7 +383,6 @@
       }
     }
 
-
     function esModoAppOMovil() {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -421,92 +391,181 @@
 
     async function gestionarExportacion() {
       if (!esModoAppOMovil()) {
-
+        // En computadora: impresión directa del navegador
         const tituloOriginal = document.title;
         prepararImpresion();
         window.addEventListener('afterprint', () => { document.title = tituloOriginal; }, { once: true });
         window.print();
       } else {
-        await exportarPDFNativo();
+        // En celular: generar PDF con plantilla fija A4
+        await exportarPDFMaquetado();
       }
     }
 
-    async function exportarPDFNativo() {
+    // Genera un documento A4 estricto en memoria independiente de la pantalla del celular
+    async function exportarPDFMaquetado() {
       const loader = document.getElementById('pdf-loading');
       loader.style.display = 'flex';
       const nombreArchivo = obtenerTitulo() + '.pdf';
 
+      // Crear contenedor temporal fuera de pantalla con medidas A4 fijas (794px = 210mm)
+      const exportContainer = document.createElement('div');
+      exportContainer.style.position = 'absolute';
+      exportContainer.style.top = '-99999px';
+      exportContainer.style.left = '0';
+      exportContainer.style.width = '794px';
+      exportContainer.style.background = '#ffffff';
+      exportContainer.style.color = '#000000';
+      exportContainer.style.padding = '12px 18px';
+      exportContainer.style.fontFamily = "'Segoe UI', Arial, sans-serif";
+      exportContainer.style.boxSizing = 'border-box';
+      exportContainer.style.lineHeight = '1.1';
+
+      // Header
+      const fecha = document.getElementById('fecha').value || '-';
+      const bat = document.getElementById('bat').value || '-';
+      const agente = document.getElementById('agente').value || '-';
+      const km = document.getElementById('km').value || '-';
+      const obsTexto = document.getElementById('obs').value || 'Sin observaciones.';
+      const fotoSrc = localStorage.getItem('foto-utia') || '';
+
+      let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <img src="https://i.imgur.com/GXTFolo.png" style="max-height:28px;" crossorigin="anonymous">
+          <div style="font-size:13px; font-weight:900; color:#0891b2; text-align:center;">CHECKLIST UTIE</div>
+          <img src="https://i.imgur.com/W5Mo4rc.png" style="max-height:28px;" crossorigin="anonymous">
+        </div>
+
+        <table style="width:100%; border:1px solid #cbd5e1; margin-bottom:5px; border-collapse:collapse; font-size:8px;">
+          <tr>
+            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>FECHA:</strong> ${fecha}</td>
+            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>BATERÍA:</strong> ${bat}</td>
+            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>AGENTE:</strong> ${agente}</td>
+            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>KM:</strong> ${km}</td>
+          </tr>
+        </table>
+      `;
+
+      function renderCardHTML(cardEl) {
+        const title = cardEl.querySelector('h2') ? cardEl.querySelector('h2').innerText : '';
+        const precinto = cardEl.querySelector('.precinto-box input');
+        const precintoLabel = cardEl.querySelector('.precinto-box label');
+
+        let cardContent = `
+          <div style="border:1px solid #cbd5e1; border-radius:3px; padding:3px 5px; margin-bottom:3px; background:#fff;">
+            <div style="font-size:7.5px; font-weight:900; color:#0891b2; text-transform:uppercase; border-bottom:1px solid #e2e8f0; padding-bottom:1px; margin-bottom:2px;">
+              ${title}
+            </div>
+        `;
+
+        if (precinto && precintoLabel) {
+          cardContent += `
+            <div style="font-size:7px; font-weight:800; color:#0891b2; border-bottom:1px solid #e2e8f0; margin-bottom:2px; padding-bottom:1px;">
+              ${precintoLabel.innerText} <span style="color:#000; font-weight:bold;">${precinto.value || '-'}</span>
+            </div>
+          `;
+        }
+
+        const items = cardEl.querySelectorAll('.check-item');
+        items.forEach(item => {
+          const chk = item.querySelector('input[type="checkbox"]');
+          const isChecked = chk && chk.checked;
+          const text = item.querySelector('.label-text') ? item.querySelector('.label-text').innerText : '';
+          const qty = item.querySelector('.qty-input') ? item.querySelector('.qty-input').value : '';
+
+          cardContent += `
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #f1f5f9; padding:0.5px 0; font-size:7.5px;">
+              <span style="display:inline-flex; align-items:center;">
+                <span style="display:inline-block; width:9px; height:9px; border:1px solid #94a3b8; border-radius:2px; margin-right:4px; text-align:center; line-height:8px; font-size:8px; font-weight:bold; background:${isChecked ? '#10b981' : '#fff'}; color:#fff;">${isChecked ? '✓' : ''}</span>
+                <span>${text}</span>
+              </span>
+              <span style="font-weight:bold; border:1px solid #e2e8f0; padding:0 3px; border-radius:2px; font-size:7px;">${qty}</span>
+            </div>
+          `;
+        });
+
+        if (title.includes('REGISTRO CARDIO')) {
+          if (fotoSrc) {
+            cardContent += `
+              <div style="text-align:center; margin-top:2px;">
+                <img src="${fotoSrc}" style="max-height:60px; max-width:100%; border:1px solid #ccc; border-radius:2px;">
+              </div>
+            `;
+          } else {
+            cardContent += `<div style="font-size:7px; color:#64748b; text-align:center; padding:5px 0;">(Sin foto adjunta)</div>`;
+          }
+        }
+
+        cardContent += `</div>`;
+        return cardContent;
+      }
+
+      // Extraer secciones y agrupar en columnas fijas
+      const bodyCards = document.querySelectorAll('.grid .card');
+      const cardsHTML = Array.from(bodyCards).map(c => renderCardHTML(c));
+
+      // Dividir las tarjetas en 3 columnas iguales usando una tabla fija
+      const col1 = [cardsHTML[0], cardsHTML[2], cardsHTML[3], cardsHTML[4]].filter(Boolean).join('');
+      const col2 = [cardsHTML[1], cardsHTML[5], cardsHTML[6], cardsHTML[7]].filter(Boolean).join('');
+      const col3 = [cardsHTML[8], cardsHTML[9], cardsHTML[10], cardsHTML[11], cardsHTML[12]].filter(Boolean).join('');
+
+      html += `
+        <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+          <tr style="vertical-align:top;">
+            <td style="width:33.3%; padding-right:2px;">${col1}</td>
+            <td style="width:33.3%; padding:0 2px;">${col2}</td>
+            <td style="width:33.3%; padding-left:2px;">${col3}</td>
+          </tr>
+        </table>
+
+        <div style="margin-top:3px; border:1px solid #cbd5e1; border-left:4px solid #0891b2; padding:3px 5px; border-radius:2px; font-size:7.5px;">
+          <strong>OBSERVACIONES:</strong>
+          <div style="white-space:pre-wrap; margin-top:1px;">${obsTexto}</div>
+        </div>
+      `;
+
+      exportContainer.innerHTML = html;
+      document.body.appendChild(exportContainer);
+
       const opt = {
-        margin: [4, 4, 4, 4],
+        margin: [3, 3, 3, 3],
         filename: nombreArchivo,
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
           logging: false,
-          onclone: (clonedDoc) => {
-     
-            clonedDoc.body.classList.add('modo-pdf-export');
-            
-      
-            clonedDoc.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-              const span = clonedDoc.createElement('span');
-              span.style.cssText = 'display:inline-block; width:10px; height:10px; margin-right:4px; vertical-align:middle; text-align:center; line-height:9px; font-size:8px; font-weight:bold; border:1px solid #94a3b8; border-radius:2px;';
-              if (cb.checked) {
-                span.style.backgroundColor = '#10b981';
-                span.style.color = '#ffffff';
-                span.innerText = '✓';
-              } else {
-                span.style.backgroundColor = '#ffffff';
-                span.innerText = '';
-              }
-              cb.parentNode.replaceChild(span, cb);
-            });
-
-        
-            clonedDoc.querySelectorAll('input[type="text"], input[type="date"]').forEach(inp => {
-              const span = clonedDoc.createElement('span');
-              span.style.fontSize = '8px';
-              span.style.fontWeight = 'bold';
-              span.innerText = inp.value || '-';
-              inp.parentNode.replaceChild(span, inp);
-            });
-
-          
-            const obs = clonedDoc.getElementById('obs');
-            if (obs) {
-              const div = clonedDoc.createElement('div');
-              div.innerText = document.getElementById('obs').value || 'Sin observaciones.';
-              div.style.cssText = 'font-size:7.5px; padding:3px; border:1px solid #cbd5e1; border-radius:2px; background:#f8fafc; white-space:pre-wrap; margin-top:3px;';
-              obs.parentNode.replaceChild(div, obs);
-            }
-          }
+          width: 794,
+          windowWidth: 794
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       try {
-        const elemento = document.body;
-       
-        const pdfBlob = await html2pdf().set(opt).from(elemento).outputPdf('blob');
-        const archivo = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
-
+        const pdfBlob = await html2pdf().set(opt).from(exportContainer).outputPdf('blob');
+        document.body.removeChild(exportContainer);
         loader.style.display = 'none';
 
-        
+        const archivo = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+
         if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
           await navigator.share({
             files: [archivo],
             title: nombreArchivo,
-            text: 'Checklist UTIe'
+            text: 'Checklist UTIE'
           });
         } else {
-          
-          html2pdf().set(opt).from(elemento).save();
+          const fileURL = URL.createObjectURL(pdfBlob);
+          const tempLink = document.createElement('a');
+          tempLink.href = fileURL;
+          tempLink.download = nombreArchivo;
+          tempLink.click();
+          URL.revokeObjectURL(fileURL);
         }
       } catch (err) {
+        if (exportContainer.parentNode) document.body.removeChild(exportContainer);
         loader.style.display = 'none';
-        alert('No se pudo generar el PDF: ' + err.message);
+        alert('Error al generar PDF: ' + err.message);
       }
     }
 
