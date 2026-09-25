@@ -7,7 +7,6 @@
   <link rel="icon" type="image/png" href="https://i.imgur.com/UDGa4e9.png"> 
   <link rel="apple-touch-icon" href="https://i.imgur.com/UDGa4e9.png">
   
-  <!-- Motor de PDF vectorial nativo (ultra liviano y 100% compatible con iOS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
@@ -76,7 +75,6 @@
 
     #obs-print { display: none; }
 
-    /* Diálogo de generación de PDF */
     #pdf-loading {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(15, 23, 42, 0.85); z-index: 999999;
@@ -90,7 +88,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Impresión nativa en PC */
     @media print {
       @page { size: A4 portrait; margin: 4mm; }
       html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: white !important; }
@@ -424,30 +421,25 @@
       return { title, precintoLabel, precintoVal, items };
     }
 
-    // Dibuja una tarjeta en el PDF usando vectores puros (cero canvas)
     function drawCardVector(doc, x, y, width, data) {
       if (!data) return 0;
       const hasPrecinto = Boolean(data.precintoLabel && data.precintoLabel.length > 0);
       const cardH = 5.2 + (hasPrecinto ? 4.2 : 0) + (data.items.length * 3.8) + 1.5;
 
-      // Caja exterior
       doc.setDrawColor(203, 213, 225); // #cbd5e1
       doc.setFillColor(255, 255, 255);
       doc.roundedRect(x, y, width, cardH, 1, 1, 'FD');
 
-      // Título
       doc.setTextColor(8, 145, 178); // #0891b2
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.2);
       doc.text(data.title.toUpperCase(), x + 2.5, y + 3.8);
 
-      // Línea divisoria cabecera
       doc.setDrawColor(226, 232, 240);
       doc.line(x + 2, y + 4.8, x + width - 2, y + 4.8);
 
       let curY = y + 4.8 + 3.2;
 
-      // Precinto si corresponde
       if (hasPrecinto) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(6.2);
@@ -458,13 +450,12 @@
         curY += 4.0;
       }
 
-      // Items y casillas
       data.items.forEach(item => {
         if (item.checked) {
           doc.setDrawColor(16, 185, 129); // #10b981
           doc.setFillColor(16, 185, 129);
           doc.roundedRect(x + 2.5, curY - 2.4, 2.8, 2.8, 0.4, 0.4, 'FD');
-          // Tilde blanca dibujada por trazo
+
           doc.setDrawColor(255, 255, 255);
           doc.setLineWidth(0.35);
           doc.line(x + 2.9, curY - 1.0, x + 3.6, curY - 0.3);
@@ -476,7 +467,6 @@
           doc.roundedRect(x + 2.5, curY - 2.4, 2.8, 2.8, 0.4, 0.4, 'FD');
         }
 
-        // Texto del ítem
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6.4);
         doc.setTextColor(15, 23, 42);
@@ -490,7 +480,6 @@
         }
         doc.text(texto, x + 6.5, curY - 0.3);
 
-        // Cantidad a la derecha
         if (item.qty) {
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(6.2);
@@ -498,7 +487,6 @@
           doc.text(item.qty, x + width - 2.5, curY - 0.3, { align: 'right' });
         }
 
-        // Línea divisoria muy suave
         doc.setDrawColor(241, 245, 249);
         doc.line(x + 2, curY + 1.0, x + width - 2, curY + 1.0);
 
@@ -508,17 +496,15 @@
       return cardH;
     }
 
-    // Generador principal de PDF por vectores nativos
     async function generarPDFVectorial() {
       const loader = document.getElementById('pdf-loading');
       loader.style.display = 'flex';
 
-      // Permitir que la UI pinte el spinner antes de procesar
       await new Promise(r => setTimeout(r, 60));
 
       try {
         const { jsPDF } = window.jspdf;
-        // Hoja A4 estándar en milímetros (210 x 297 mm)
+
         const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
         const nombreArchivo = obtenerTitulo() + '.pdf';
@@ -527,7 +513,6 @@
         const agente = document.getElementById('agente').value || '-';
         const km = document.getElementById('km').value || '-';
 
-        // 1. Cabecera (Insignias vectoriales sin dependencia de red)
         doc.setFillColor(8, 145, 178);
         doc.roundedRect(7, 6, 25, 7, 1.2, 1.2, 'F');
         doc.setTextColor(255, 255, 255);
@@ -547,7 +532,6 @@
         doc.setFontSize(13);
         doc.text('CHECKLIST UTIE', 105, 11.2, { align: 'center' });
 
-        // 2. Barra de datos del vehículo / guardia
         doc.setDrawColor(203, 213, 225);
         doc.setFillColor(248, 250, 252);
         doc.rect(7, 15.5, 196, 6.5, 'FD');
@@ -581,7 +565,6 @@
         doc.setFont('helvetica', 'normal');
         doc.text(km, 183, 20);
 
-        // 3. Distribución de las tarjetas en 3 columnas milimétricas
         const allCards = document.querySelectorAll('.grid .card');
         const colW = 63; // ancho de cada columna (63 x 3 + gaps = 196 mm)
         const gap = 3.5;
@@ -590,7 +573,6 @@
         const x3 = x2 + colW + gap; // 140 mm
         const startY = 24.5;
 
-        // Columna 1
         let y1 = startY;
         y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[0])) + 2; // Lateral Derecho
         y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[2])) + 2; // MEDIO
@@ -605,13 +587,11 @@
         y2 += drawCardVector(doc, x2, y2, colW, getCardData(allCards[7])) + 2; // Bolso Verde 1
         y2 += drawCardVector(doc, x2, y2, colW, getCardData(allCards[8])) + 2; // Bolso Verde 2
 
-        // Columna 3
         let y3 = startY;
         y3 += drawCardVector(doc, x3, y3, colW, getCardData(allCards[9])) + 2;  // SUPERIOR
         y3 += drawCardVector(doc, x3, y3, colW, getCardData(allCards[10])) + 2; // Interior
         y3 += drawCardVector(doc, x3, y3, colW, getCardData(allCards[11])) + 2; // Mueble
 
-        // Tarjeta Registro Cardio con foto
         const cardioH = 38;
         doc.setDrawColor(203, 213, 225);
         doc.setFillColor(255, 255, 255);
@@ -641,7 +621,6 @@
         }
         y3 += cardioH + 2;
 
-        // 4. Bloque de Observaciones al pie (ocupa el ancho completo)
         const maxColY = Math.max(y1, y2, y3);
         const obsY = Math.max(maxColY, 250);
         const obsH = Math.min(291 - obsY, 36);
@@ -650,7 +629,6 @@
         doc.setFillColor(248, 250, 252);
         doc.roundedRect(7, obsY, 196, obsH, 1, 1, 'FD');
 
-        // Borde izquierdo resaltado
         doc.setFillColor(8, 145, 178);
         doc.rect(7, obsY, 2.5, obsH, 'F');
 
@@ -666,7 +644,6 @@
         const lineasObs = doc.splitTextToSize(obsTexto, 186);
         doc.text(lineasObs, 12, obsY + 8.2);
 
-        // 5. Salida y distribución nativa
         const pdfBlob = doc.output('blob');
         const archivo = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
 
@@ -679,7 +656,6 @@
             text: 'Checklist UTIE'
           });
         } else {
-          // Descarga directa como fallback
           doc.save(nombreArchivo);
         }
 
