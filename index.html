@@ -7,8 +7,8 @@
   <link rel="icon" type="image/png" href="https://i.imgur.com/UDGa4e9.png"> 
   <link rel="apple-touch-icon" href="https://i.imgur.com/UDGa4e9.png">
   
-  <!-- Librería para generar PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Motor de PDF vectorial nativo (ultra liviano y 100% compatible con iOS) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root {
@@ -76,10 +76,10 @@
 
     #obs-print { display: none; }
 
-    /* Indicador visual de carga (tapa la creación del PDF en segundo plano) */
+    /* Diálogo de generación de PDF */
     #pdf-loading {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: #0f172a; z-index: 999999;
+      background: rgba(15, 23, 42, 0.85); z-index: 999999;
       color: white; font-weight: bold; font-size: 1rem;
       align-items: center; justify-content: center; flex-direction: column; gap: 12px;
     }
@@ -126,7 +126,7 @@
   <div id="pdf-loading">
     <div class="spinner"></div>
     <div>Generando PDF A4...</div>
-    <span style="font-size: 0.75rem; opacity: 0.8;">Aguarde un momento</span>
+    <span style="font-size: 0.75rem; opacity: 0.8;">Un momento por favor</span>
   </div>
 
   <div class="fab-container">
@@ -142,9 +142,9 @@
   </div>
 
   <header>
-    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME" id="logo-left" crossorigin="anonymous">
+    <img src="https://i.imgur.com/GXTFolo.png" alt="SAME" id="logo-left">
     <h1>CHECKLIST UTIE</h1>
-    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES" id="logo-right" crossorigin="anonymous">
+    <img src="https://i.imgur.com/W5Mo4rc.png" alt="ECUES" id="logo-right">
   </header>
 
   <div class="header-form">
@@ -389,165 +389,288 @@
 
     async function gestionarExportacion() {
       if (!esModoAppOMovil()) {
+        // En PC: impresión estándar del navegador
         const tituloOriginal = document.title;
         prepararImpresion();
         window.addEventListener('afterprint', () => { document.title = tituloOriginal; }, { once: true });
         window.print();
       } else {
-        await exportarPDFMaquetado();
+        // En Celular (iPhone / Android / PWA): generación vectorial directa
+        await generarPDFVectorial();
       }
     }
 
-    async function exportarPDFMaquetado() {
-      const loader = document.getElementById('pdf-loading');
-      loader.style.display = 'flex';
-      const nombreArchivo = obtenerTitulo() + '.pdf';
-
-      // Posicionamiento en el origen visible para evitar capturas en blanco
-      const scrollPrevio = window.scrollY;
-      window.scrollTo(0, 0);
-
-      const exportContainer = document.createElement('div');
-      exportContainer.id = 'pdf-export-container';
-      exportContainer.style.position = 'absolute';
-      exportContainer.style.top = '0';
-      exportContainer.style.left = '0';
-      exportContainer.style.width = '794px';
-      exportContainer.style.background = '#ffffff';
-      exportContainer.style.color = '#000000';
-      exportContainer.style.padding = '12px 16px';
-      exportContainer.style.fontFamily = "'Segoe UI', Arial, sans-serif";
-      exportContainer.style.boxSizing = 'border-box';
-      exportContainer.style.lineHeight = '1.1';
-      exportContainer.style.zIndex = '1000';
-
-      const fecha = document.getElementById('fecha').value || '-';
-      const bat = document.getElementById('bat').value || '-';
-      const agente = document.getElementById('agente').value || '-';
-      const km = document.getElementById('km').value || '-';
-      const obsTexto = document.getElementById('obs').value || 'Sin observaciones.';
-      const fotoSrc = localStorage.getItem('foto-utia') || '';
-
-      let html = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <img src="https://i.imgur.com/GXTFolo.png?v=1" style="max-height:26px;" crossorigin="anonymous">
-          <div style="font-size:13px; font-weight:900; color:#0891b2; text-align:center; letter-spacing:1px;">CHECKLIST UTIE</div>
-          <img src="https://i.imgur.com/W5Mo4rc.png?v=1" style="max-height:26px;" crossorigin="anonymous">
-        </div>
-
-        <table style="width:100%; border:1px solid #cbd5e1; margin-bottom:5px; border-collapse:collapse; font-size:8px;">
-          <tr>
-            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>FECHA:</strong> ${fecha}</td>
-            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>BATERÍA:</strong> ${bat}</td>
-            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>AGENTE:</strong> ${agente}</td>
-            <td style="padding:2px 4px; border:1px solid #cbd5e1; width:25%;"><strong>KM:</strong> ${km}</td>
-          </tr>
-        </table>
-      `;
-
-      function renderCardHTML(cardEl) {
-        if (!cardEl) return '';
-        const title = cardEl.querySelector('h2') ? cardEl.querySelector('h2').innerText : '';
-        const precinto = cardEl.querySelector('.precinto-box input');
-        const precintoLabel = cardEl.querySelector('.precinto-box label');
-
-        let cardContent = `
-          <div style="border:1px solid #cbd5e1; border-radius:3px; padding:3px 4px; margin-bottom:3px; background:#ffffff;">
-            <div style="font-size:7px; font-weight:900; color:#0891b2; text-transform:uppercase; border-bottom:1px solid #e2e8f0; padding-bottom:1px; margin-bottom:2px;">
-              ${title}
-            </div>
-        `;
-
-        if (precinto && precintoLabel) {
-          cardContent += `
-            <div style="font-size:6.5px; font-weight:800; color:#0891b2; border-bottom:1px solid #e2e8f0; margin-bottom:2px; padding-bottom:1px;">
-              ${precintoLabel.innerText} <span style="color:#000000; font-weight:bold;">${precinto.value || '-'}</span>
-            </div>
-          `;
-        }
-
-        const items = cardEl.querySelectorAll('.check-item');
-        items.forEach(item => {
-          const chk = item.querySelector('input[type="checkbox"]');
-          const isChecked = chk && chk.checked;
-          const text = item.querySelector('.label-text') ? item.querySelector('.label-text').innerText : '';
-          const qty = item.querySelector('.qty-input') ? item.querySelector('.qty-input').value : '';
-
-          cardContent += `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #f1f5f9; padding:0.5px 0; font-size:7px;">
-              <span style="display:inline-flex; align-items:center;">
-                <span style="display:inline-block; width:8px; height:8px; border:1px solid #94a3b8; border-radius:2px; margin-right:4px; text-align:center; line-height:7px; font-size:7px; font-weight:bold; background:${isChecked ? '#10b981' : '#ffffff'}; color:#ffffff;">${isChecked ? '✓' : ''}</span>
-                <span>${text}</span>
-              </span>
-              <span style="font-weight:bold; border:1px solid #e2e8f0; padding:0 2px; border-radius:2px; font-size:6.5px;">${qty}</span>
-            </div>
-          `;
+    // Extrae la información actual de una tarjeta del DOM
+    function getCardData(cardEl) {
+      if (!cardEl) return null;
+      const title = cardEl.querySelector('h2') ? cardEl.querySelector('h2').innerText.trim() : '';
+      const precintoInput = cardEl.querySelector('.precinto-box input');
+      const precintoLabelEl = cardEl.querySelector('.precinto-box label');
+      const precintoLabel = precintoLabelEl ? precintoLabelEl.innerText.replace(':', '').trim() : '';
+      const precintoVal = precintoInput ? precintoInput.value.trim() : '';
+      
+      const items = [];
+      cardEl.querySelectorAll('.check-item').forEach(itemEl => {
+        const chk = itemEl.querySelector('input[type="checkbox"]');
+        const label = itemEl.querySelector('.label-text');
+        const qty = itemEl.querySelector('.qty-input');
+        items.push({
+          checked: chk ? chk.checked : false,
+          text: label ? label.innerText.trim() : '',
+          qty: qty ? qty.value.trim() : ''
         });
+      });
 
-        if (title.includes('REGISTRO CARDIO')) {
-          if (fotoSrc) {
-            cardContent += `
-              <div style="text-align:center; margin-top:2px;">
-                <img src="${fotoSrc}" style="max-height:55px; max-width:100%; border:1px solid #ccc; border-radius:2px;">
-              </div>
-            `;
-          } else {
-            cardContent += `<div style="font-size:6.5px; color:#64748b; text-align:center; padding:4px 0;">(Sin foto adjunta)</div>`;
-          }
-        }
+      return { title, precintoLabel, precintoVal, items };
+    }
 
-        cardContent += `</div>`;
-        return cardContent;
+    // Dibuja una tarjeta en el PDF usando vectores puros (cero canvas)
+    function drawCardVector(doc, x, y, width, data) {
+      if (!data) return 0;
+      const hasPrecinto = Boolean(data.precintoLabel && data.precintoLabel.length > 0);
+      const cardH = 5.2 + (hasPrecinto ? 4.2 : 0) + (data.items.length * 3.8) + 1.5;
+
+      // Caja exterior
+      doc.setDrawColor(203, 213, 225); // #cbd5e1
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(x, y, width, cardH, 1, 1, 'FD');
+
+      // Título
+      doc.setTextColor(8, 145, 178); // #0891b2
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.2);
+      doc.text(data.title.toUpperCase(), x + 2.5, y + 3.8);
+
+      // Línea divisoria cabecera
+      doc.setDrawColor(226, 232, 240);
+      doc.line(x + 2, y + 4.8, x + width - 2, y + 4.8);
+
+      let curY = y + 4.8 + 3.2;
+
+      // Precinto si corresponde
+      if (hasPrecinto) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.2);
+        doc.setTextColor(8, 145, 178);
+        doc.text(data.precintoLabel + ':', x + 2.5, curY);
+        doc.setTextColor(15, 23, 42);
+        doc.text(data.precintoVal || '-', x + 23, curY);
+        curY += 4.0;
       }
 
-      const bodyCards = document.querySelectorAll('.grid .card');
-      const cardsHTML = Array.from(bodyCards).map(c => renderCardHTML(c));
+      // Items y casillas
+      data.items.forEach(item => {
+        if (item.checked) {
+          doc.setDrawColor(16, 185, 129); // #10b981
+          doc.setFillColor(16, 185, 129);
+          doc.roundedRect(x + 2.5, curY - 2.4, 2.8, 2.8, 0.4, 0.4, 'FD');
+          // Tilde blanca dibujada por trazo
+          doc.setDrawColor(255, 255, 255);
+          doc.setLineWidth(0.35);
+          doc.line(x + 2.9, curY - 1.0, x + 3.6, curY - 0.3);
+          doc.line(x + 3.6, curY - 0.3, x + 4.9, curY - 1.9);
+          doc.setLineWidth(0.2); // restablecer
+        } else {
+          doc.setDrawColor(148, 163, 184); // #94a3b8
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(x + 2.5, curY - 2.4, 2.8, 2.8, 0.4, 0.4, 'FD');
+        }
 
-      // Distribución balanceada en 3 columnas
-      const col1 = [cardsHTML[0], cardsHTML[2], cardsHTML[3], cardsHTML[4], cardsHTML[5]].filter(Boolean).join('');
-      const col2 = [cardsHTML[1], cardsHTML[6], cardsHTML[7], cardsHTML[8]].filter(Boolean).join('');
-      const col3 = [cardsHTML[9], cardsHTML[10], cardsHTML[11], cardsHTML[12]].filter(Boolean).join('');
+        // Texto del ítem
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.4);
+        doc.setTextColor(15, 23, 42);
 
-      html += `
-        <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
-          <tr style="vertical-align:top;">
-            <td style="width:33.3%; padding-right:2px;">${col1}</td>
-            <td style="width:33.3%; padding:0 2px;">${col2}</td>
-            <td style="width:33.3%; padding-left:2px;">${col3}</td>
-          </tr>
-        </table>
+        let texto = item.text;
+        if (doc.getTextWidth(texto) > (width - 18)) {
+          while (doc.getTextWidth(texto + '...') > (width - 18) && texto.length > 0) {
+            texto = texto.slice(0, -1);
+          }
+          texto += '...';
+        }
+        doc.text(texto, x + 6.5, curY - 0.3);
 
-        <div style="margin-top:3px; border:1px solid #cbd5e1; border-left:3px solid #0891b2; padding:3px 5px; border-radius:2px; font-size:7px;">
-          <strong>OBSERVACIONES:</strong>
-          <div style="white-space:pre-wrap; margin-top:1px;">${obsTexto}</div>
-        </div>
-      `;
+        // Cantidad a la derecha
+        if (item.qty) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6.2);
+          doc.setTextColor(15, 23, 42);
+          doc.text(item.qty, x + width - 2.5, curY - 0.3, { align: 'right' });
+        }
 
-      exportContainer.innerHTML = html;
-      document.body.appendChild(exportContainer);
+        // Línea divisoria muy suave
+        doc.setDrawColor(241, 245, 249);
+        doc.line(x + 2, curY + 1.0, x + width - 2, curY + 1.0);
 
-      const opt = {
-        margin: [3, 3, 3, 3],
-        filename: nombreArchivo,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          scrollX: 0,
-          scrollY: 0,
-          width: 794,
-          windowWidth: 794
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+        curY += 3.8;
+      });
+
+      return cardH;
+    }
+
+    // Generador principal de PDF por vectores nativos
+    async function generarPDFVectorial() {
+      const loader = document.getElementById('pdf-loading');
+      loader.style.display = 'flex';
+
+      // Permitir que la UI pinte el spinner antes de procesar
+      await new Promise(r => setTimeout(r, 60));
 
       try {
-        const pdfBlob = await html2pdf().set(opt).from(exportContainer).outputPdf('blob');
-        document.body.removeChild(exportContainer);
-        window.scrollTo(0, scrollPrevio);
-        loader.style.display = 'none';
+        const { jsPDF } = window.jspdf;
+        // Hoja A4 estándar en milímetros (210 x 297 mm)
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
+        const nombreArchivo = obtenerTitulo() + '.pdf';
+        const fecha = document.getElementById('fecha').value || '-';
+        const bat = document.getElementById('bat').value || '-';
+        const agente = document.getElementById('agente').value || '-';
+        const km = document.getElementById('km').value || '-';
+
+        // 1. Cabecera (Insignias vectoriales sin dependencia de red)
+        doc.setFillColor(8, 145, 178);
+        doc.roundedRect(7, 6, 25, 7, 1.2, 1.2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('SAME 107', 19.5, 10.7, { align: 'center' });
+
+        doc.setFillColor(15, 23, 42);
+        doc.roundedRect(178, 6, 25, 7, 1.2, 1.2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text('ECUES', 190.5, 10.7, { align: 'center' });
+
+        doc.setTextColor(8, 145, 178);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text('CHECKLIST UTIE', 105, 11.2, { align: 'center' });
+
+        // 2. Barra de datos del vehículo / guardia
+        doc.setDrawColor(203, 213, 225);
+        doc.setFillColor(248, 250, 252);
+        doc.rect(7, 15.5, 196, 6.5, 'FD');
+
+        doc.setFontSize(6.8);
+        doc.setTextColor(71, 85, 105);
+        doc.setFont('helvetica', 'bold');
+        doc.text('FECHA:', 9, 20);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.text(fecha, 21, 20);
+
+        doc.setTextColor(71, 85, 105);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BATERÍA:', 58, 20);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.text(bat, 73, 20);
+
+        doc.setTextColor(71, 85, 105);
+        doc.setFont('helvetica', 'bold');
+        doc.text('AGENTE:', 107, 20);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.text(agente, 121, 20);
+
+        doc.setTextColor(71, 85, 105);
+        doc.setFont('helvetica', 'bold');
+        doc.text('KM AUTONOMÍA:', 156, 20);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        doc.text(km, 183, 20);
+
+        // 3. Distribución de las tarjetas en 3 columnas milimétricas
+        const allCards = document.querySelectorAll('.grid .card');
+        const colW = 63; // ancho de cada columna (63 x 3 + gaps = 196 mm)
+        const gap = 3.5;
+        const x1 = 7;
+        const x2 = x1 + colW + gap; // 73.5 mm
+        const x3 = x2 + colW + gap; // 140 mm
+        const startY = 24.5;
+
+        // Columna 1
+        let y1 = startY;
+        y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[0])) + 2; // Lateral Derecho
+        y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[2])) + 2; // MEDIO
+        y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[3])) + 2; // Cajón 1
+        y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[4])) + 2; // Cajón 2
+        y1 += drawCardVector(doc, x1, y1, colW, getCardData(allCards[5])) + 2; // Cajón 3
+
+        // Columna 2
+        let y2 = startY;
+        y2 += drawCardVector(doc, x2, y2, colW, getCardData(allCards[1])) + 2; // Lateral Izquierdo
+        y2 += drawCardVector(doc, x2, y2, colW, getCardData(allCards[6])) + 2; // Cajón 4
+        y2 += drawCardVector(doc, x2, y2, colW, getCardData(allCards[7])) + 2; // Bolso Verde 1
+        y2 += drawCardVector(doc, x2, y2, colW, getCardData(allCards[8])) + 2; // Bolso Verde 2
+
+        // Columna 3
+        let y3 = startY;
+        y3 += drawCardVector(doc, x3, y3, colW, getCardData(allCards[9])) + 2;  // SUPERIOR
+        y3 += drawCardVector(doc, x3, y3, colW, getCardData(allCards[10])) + 2; // Interior
+        y3 += drawCardVector(doc, x3, y3, colW, getCardData(allCards[11])) + 2; // Mueble
+
+        // Tarjeta Registro Cardio con foto
+        const cardioH = 38;
+        doc.setDrawColor(203, 213, 225);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(x3, y3, colW, cardioH, 1, 1, 'FD');
+
+        doc.setTextColor(8, 145, 178);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.2);
+        doc.text('REGISTRO CARDIO', x3 + 2.5, y3 + 3.8);
+
+        doc.setDrawColor(226, 232, 240);
+        doc.line(x3 + 2, y3 + 4.8, x3 + colW - 2, y3 + 4.8);
+
+        const fotoSrc = localStorage.getItem('foto-utia');
+        if (fotoSrc) {
+          try {
+            doc.addImage(fotoSrc, 'JPEG', x3 + 4, y3 + 6.2, colW - 8, 29.5);
+          } catch (e) {
+            doc.setFontSize(6.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text('(Foto guardada en app)', x3 + (colW / 2), y3 + 20, { align: 'center' });
+          }
+        } else {
+          doc.setFontSize(6.5);
+          doc.setTextColor(100, 116, 139);
+          doc.text('(Sin foto adjunta)', x3 + (colW / 2), y3 + 20, { align: 'center' });
+        }
+        y3 += cardioH + 2;
+
+        // 4. Bloque de Observaciones al pie (ocupa el ancho completo)
+        const maxColY = Math.max(y1, y2, y3);
+        const obsY = Math.max(maxColY, 250);
+        const obsH = Math.min(291 - obsY, 36);
+
+        doc.setDrawColor(8, 145, 178);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(7, obsY, 196, obsH, 1, 1, 'FD');
+
+        // Borde izquierdo resaltado
+        doc.setFillColor(8, 145, 178);
+        doc.rect(7, obsY, 2.5, obsH, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.2);
+        doc.setTextColor(8, 145, 178);
+        doc.text('OBSERVACIONES:', 12, obsY + 4.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(15, 23, 42);
+        const obsTexto = document.getElementById('obs').value.trim() || 'Sin observaciones registradas.';
+        const lineasObs = doc.splitTextToSize(obsTexto, 186);
+        doc.text(lineasObs, 12, obsY + 8.2);
+
+        // 5. Salida y distribución nativa
+        const pdfBlob = doc.output('blob');
         const archivo = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+
+        loader.style.display = 'none';
 
         if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
           await navigator.share({
@@ -556,20 +679,13 @@
             text: 'Checklist UTIE'
           });
         } else {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          const tempLink = document.createElement('a');
-          tempLink.href = fileURL;
-          tempLink.download = nombreArchivo;
-          tempLink.click();
-          URL.revokeObjectURL(fileURL);
+          // Descarga directa como fallback
+          doc.save(nombreArchivo);
         }
+
       } catch (err) {
-        if (document.getElementById('pdf-export-container')) {
-          document.body.removeChild(document.getElementById('pdf-export-container'));
-        }
-        window.scrollTo(0, scrollPrevio);
         loader.style.display = 'none';
-        alert('Error al generar PDF: ' + err.message);
+        alert('Error al generar PDF vectorial: ' + err.message);
       }
     }
 
